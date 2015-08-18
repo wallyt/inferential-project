@@ -70,7 +70,7 @@ img {
 
 <p>This course project consists of two sections, one a simulation exercise and the second an inferential data analysis.</p>
 <div id="section-1-a-simulation-exercise" class="section level2">
-<h2>Section 1: A simulation exercise</h2>
+<h2>Section 1: A Simulation Exercise</h2>
 <p>Using the simulation of an exponential distribution, we will explore the relationships between the sample and the theoretical population (including mean and variance), and demonstrate that the distribution of sample means adheres to a Gaussian (normal) distribution, even though the original distribution is exponential.</p>
 <div id="run-the-simulations" class="section level3">
 <h3>Run the simulations</h3>
@@ -146,7 +146,7 @@ set_check &lt;- sum(sample_means &gt; lower &amp; sample_means &lt; upper)/lengt
 </div>
 </div>
 <div id="section-2-basic-inferential-data-analysis" class="section level2">
-<h2>Section 2: Basic inferential data analysis</h2>
+<h2>Section 2: Basic Inferential Data Analysis</h2>
 <p>Using the ToothGrowth data from the R datasets package, we will first perform some exploratory data analysis to get a feel for the data set and then provide a basic summary. We’ll then compare tooth growth by supp and dose, using confidence intervals and hypothesis testing. Based on this analysis, we’ll show that….</p>
 <div id="exploratory-data-analysis" class="section level3">
 <h3>Exploratory Data Analysis</h3>
@@ -263,7 +263,7 @@ t &lt;- (x_two-x_half)/(sp*sqrt(1/n + 1/n))</code></pre>
 <p>Our P-Value &lt; <span class="math">\(\alpha\)</span>, so we reject the null hypothesis, in favor of the alternative hypothesis: there is evidence to suggest that Vitamin C in some form results in increased tooth growth. (It would require an additional analysis to determine if orange juice or Vitamin C is more effective.)</p>
 <p>To double-check our work, we look at the confidence intervals, using the formula: <span class="math">\[\bar X_2 - \bar X_{0.5}\pm t_{df} s_p \sqrt{\frac{1}{n_2}+\frac{1}{n_{0.5}}}\]</span> But we can pull the 95% confidence interval from the <code>t.test()</code> results:</p>
 <pre class="r"><code>test &lt;- t.test(two_dose, half_dose, var.equal = TRUE)</code></pre>
-<p>Which results in a lower bound of 12.84 to 18.15, which comfortably includes the difference between our two sample means of 15.495.</p>
+<p>Which results in a lower bound of 12.84 and an upper bound 18.15, which comfortably include the difference between our two sample means of 15.495, so the difference in our sample means is solidly within the range of our 95% confidence interval.</p>
 </div>
 <div id="conclusions" class="section level3">
 <h3>Conclusions</h3>

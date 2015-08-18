@@ -2,7 +2,9 @@
 title: "Inferential Statistics Course Project"
 author: "Wally Thornton"
 date: "August 22, 2015"
-output: html_document
+output: 
+  pdf_document: 
+    latex_engine: lualatex
 ---
 
 This course project consists of two sections, one a simulation exercise and the second an inferential data analysis.

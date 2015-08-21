@@ -211,9 +211,10 @@ To remove this issue, we will treat the OJ and VC treatments as separate experim
 If Vitamin C does increase tooth growth, we would expect greater dosages to yield greater growth (presumably up to some limit, but testing that limit is beyond the data provided). Therefore, for one or both supplements, mean tooth growth from dosages of 2.0mg should be greater than mean tooth growth from 0.5mg dosages. But if Vitamin C supplements do not result in increased tooth growth, the means should not differ significantly.
 
 Our null hypothesis is therefore:
-$$H_0: \mu_2 = \mu_{0.5}\\or,\ equivalently\\ H_0: \mu_2 - \mu_{0.5} = 0$$
+$$H_0: \mu_2 = \mu_{0.5}\quad \textrm{or, equivalently,} \quad H_0: \mu_2 - \mu_{0.5} = 0$$
+
 If Vitamin C does enhance tooth growth, we would expect to see increased growth under the 2.0mg dose, so our alternative hypothesis is:
-$$H_a: \mu_2 > \mu_{0.5}\\or,\ equivalently\\H_a: \mu_2 - \mu_{0.5} > 0$$
+$$H_a: \mu_2 > \mu_{0.5}\quad \textrm{or, equivalently,} \quad H_a: \mu_2 - \mu_{0.5} > 0$$
 
 To determine whether or not to reject the null hypothesis above, we'll set the level of significance ($\alpha\$) to 0.05.
 ```{r}
@@ -251,6 +252,7 @@ shadenorm(between=c(t,Inf), color="blue")
 Even so, we calculate our P-Value as:
 ```{r}
 t_test_OJ <- t.test(two_dose_OJ, half_dose_OJ, alternative = "greater", var.equal = TRUE)
+t_test_OJ
 ```
 
 Our P-Value of `r t_test_OJ$p.value` < $\alpha$, so we reject the null hypothesis, in favor of the alternative hypothesis: there is evidence to suggest that Vitamin C when given by orange juice results in increased tooth growth.
@@ -262,19 +264,29 @@ But we can pull the 95% confidence interval from the `t.test()` results:
 ```{r}
 t_test_OJ_CI <- t.test(two_dose_OJ, half_dose_OJ, var.equal = TRUE)
 ```
-Which results in a lower bound of `r round(t_test_OJ_CI$conf.int[1],2)` and an upper bound `r round(t_test_OJ_CI$conf.int[2],2)`, which comfortably include the difference between our two sample means of `r x_two-x_half`, so the difference in our sample means is solidly within the range of our 95% confidence interval.
+Which results in a lower bound of `r round(t_test_OJ_CI$conf.int[1],2)` and an upper bound `r round(t_test_OJ_CI$conf.int[2],2)`, which comfortably include the difference between our two sample means of `r x_two-x_half`, so the difference in our sample means is solidly within the range of our 95% confidence interval. Further, the entire interval is well above zero, which, under $H_a$, means that the difference between our two sample means is positive and therefore the means are not equivalent.
 
-SHORT T.TEST FOR VC
+Now we will run the same tests for the ascorbic acid supplement, but using R functions directly.
+```{r}
+t_test_VC <- t.test(two_dose_VC, half_dose_VC, alternative = "greater", var.equal = TRUE)
+t_test_VC
+```
+Similar to OJ, the t statistic for VC is quite high (`r round(t_test_VC$statistic,2)`), which would lead to a very low P-Value, which we see in the results: `r t_test_VC$p.value`. This is well below our $\alpha\$ of 0.5 so we reject the null hypothesis and conclude that there is evidence that Vitamin C given by ascorbic acid results in increased tooth growth.
+
+```{r}
+t_test_VC_CI <- t.test(two_dose_VC, half_dose_VC, var.equal = TRUE)
+```
+Calculating the 95% confidence intervals for the VC supp yields [`r round(t_test_VC_CI$conf.int[1],2)`, `r round(t_test_VC_CI$conf.int[2],2)`], which again comfortably includes our mean and is well above zero.
 
 SHORT ANALYSIS IF THERE IS 2X THE TOOTH GROWTH FROM 1MG TO 2MG AS THERE IS FROM .5MG TO 1MG
 
-###Conclusions
+###Conclusion
 Given the limitations of the data, we had to make a number of assumptions:
+
+* From the description of the dataset, the 10 guinea pigs comprised the entire study, so while this is not technically a random sample, it is obviously a valid representation of the population
 * The observations are independent, particularly that the supplement and/or dosage used in previous trials didn't affect the tooth growth in subsequent trials
+* The data are normally distributed
 * Since we could not identify which `len` result belonged to which subject, we had to treat the data as not paired
-* 
+* The variances are approximately equal, which we checked with an F test
 
-Even with these assumptions, the results show with high levels of confidence that Vitamin C does promote tooth growth.
-
-
-
+Even with these assumptions, the results show with high levels of confidence that Vitamin C in the form of orange juice and ascorbic acid does promote tooth growth.

@@ -7,15 +7,14 @@ output:
     latex_engine: lualatex
   html_document: default
 ---
-
 This course project consists of two sections, one a simulation exercise and the second an inferential data analysis.
 
 ##Section 1: A Simulation Exercise
 Using the simulation of an exponential distribution, we will explore the relationships between the sample and the theoretical population (including mean and variance), and demonstrate that the distribution of sample means adheres to a Gaussian (normal) distribution, even though the original distribution is exponential.
 
 ###Run the simulations
-The first step is to set up the simulation environment and load packages that might be needed.
-```{r simSetup, message=FALSE, warning=FALSE}
+The first step is to set up the simulation environment and load packages that might be needed. (Code not shown. Throughout report only code directly generating results will be shown, to save space.)
+```{r simSetup, message=FALSE, warning=FALSE, echo=FALSE}
 knitr::opts_chunk$set(fig.width=9)
 options(scipen=999)
 setwd("~/Documents/DataScience/Inferential Statistics")
@@ -28,6 +27,7 @@ ensurePkg <- function(x) {
 }
 ensurePkg('scales')
 ensurePkg('tidyr')
+ensurePkg('dplyr')
 ensurePkg('ggplot2')
 ensurePkg('graphics')
 ```
@@ -38,7 +38,6 @@ set.seed(42)
 n <- 40
 lambda <- 0.2
 r <- 1000
-
 my_samples <- matrix(rexp(n*r, lambda), r)
 ```
 
@@ -51,59 +50,103 @@ How do they compare to our theoretical mean of 5? While the mean of each sample 
 ```{r echo=FALSE}
 summary(sample_means)
 ```
+This is visually evident when we plot the distributions:
+
+```{r meanPlots, message=FALSE, warning=FALSE}
+long_sample <- gather(data.frame(c(my_samples)), "sample", "x")
+long_means <- gather(data.frame(sample_means), "sample", "x")
+long_combined <- bind_rows(long_sample, long_means)
+a <- ggplot(long_sample, aes(x=x, y=..density..)) +
+    geom_histogram(fill="steelblue", color="grey80", size=.2, alpha=.8) +
+    geom_vline(xintercept=1/lambda, linetype="solid", color="black", size = 1) + 
+    annotate("text", size=3, hjust=0, x = 1/lambda+2, y=.1, color="black"
+             , label=paste("theoretical mean =",1/lambda)) + 
+    xlab("Values") +
+    ggtitle("Distribution of All Samples") +
+    theme(plot.title=element_text(size=14))
+b <- ggplot(long_means, aes(x=x, y=..density..)) +
+    geom_histogram(fill="steelblue", color="grey80", size=.2, alpha=.8) +
+    geom_vline(xintercept=mean(sample_means), linetype="dashed", color="red", size=1) + 
+    geom_vline(xintercept=1/lambda, linetype="solid", color="black", size=1) + 
+    annotate("text", size=3, hjust=0, x = mean(sample_means)+.2, y=.52, color="red"
+             , label=paste("mean =",round(mean(sample_means),2))) + 
+    annotate("text", size=3, hjust=0, x = 1/lambda+.2, y=.48, color="black"
+             , label=paste("theoretical mean =",round(1/lambda,2))) +     
+    xlab("Means of Sample Values") +
+    ggtitle("Sample Means") +
+    theme(plot.title=element_text(size=14))
+```
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.width=3, fig.height=3}
+a
+b
+```
 
 ###Calculate and compare the sample variance to the theoretical variance
-So we've demonstrated that the mean of the sample is very close to that of the distribution, but how does the variance compare? The standard deviation of an exponential distribution is 1/$\lambda$, so the variance will be $1/\lambda^2$. Therefore, the theoretical variance of the distribution will be `r 1/lambda^2`.
+The standard deviation of an exponential distribution is 1/$\lambda$, so the variance is be $(1/\lambda)^2$, which results in the theoretical variance of the distribution of `r 1/lambda^2`.
 
 The variance of the sampling distribution of the mean (also known as the standard error of the mean) is defined as $\sigma_\mu^2 = \sigma^2/N$, that is, the population variance divided by the sample size. Plugging in our values results in a standard error of the mean of:
-```{r}
+```{r, echo=FALSE}
 se <- 1/lambda^2/n
-paste("Standard error of the mean: ", se)
+print(paste("Standard error of the mean: ", se))
 ```
-This is significantly less than the theoretical population variance. Why? This is because we are estimating how far the sample mean is likely to be from the population mean and as sample sizes get larger, the standard error will trend toward zero because the estimate improves. 
+This is significantly less than the theoretical population variance. Why? This is because we are estimating how far each sample mean is likely to be from the population mean and as sample sizes get larger, the standard error will trend toward zero because the estimate improves. This difference in variance shows up in boxplots of the two distributions, with the sample means much more clustered while the population is much more spread out.
+
+```{r echo=FALSE, fig.width=9, fig.height=3, message=FALSE, warning=FALSE}
+ggplot(long_combined, aes(x=sample, y=x)) + 
+    geom_boxplot(horizontal=TRUE, fill="steelblue", color="white")+coord_flip() + 
+    ggtitle("Distributions and Spread") +
+    theme(plot.title=element_text(size=14))
+```
 
 ###Analyze the distribution of the sample mean
-Looking at the histogram of the `r comma(n*r)` randomly generated exponents, it's obvious that the data are not normally distributed and actually follow an exponential distribution. If we plot the means of each 40-value observation, we find that they are not distributed exponentially, but rather follow a normal distribution. Here they are, with their respective density curves overlaid:
+Looking at the histogram of the `r comma(n*r)` randomly generated exponents, it's obvious that the data are not normally distributed and actually follow an exponential distribution. If we plot the means of each 40-value observation, we find that they are not distributed exponentially, but rather follow a normal distribution. Here are the same plots as above, now with their respective density curves overlaid:
+
 ```{r distPlots, message=FALSE}
-ggplot(data.frame(c(my_samples)), aes(x=c.my_samples., y=..density..)) +
+a <- ggplot(long_sample, aes(x=x, y=..density..)) +
     geom_histogram(fill="steelblue", color="grey80", size=.2, alpha=.8) +
     geom_density(color="grey10", size=1) + 
-    geom_vline(xintercept=1/lambda, linetype="dashed", color="red") + 
-    annotate("text", size=6, hjust=0, x = 1/lambda+2, y=.1, color="red"
-             , label=paste("mean=",1/lambda)) + 
-    xlab("Sample Values") +
-    ggtitle("Distribution of All Samples")
-
-ggplot(data.frame(sample_means), aes(x=sample_means, y=..density..)) +
+    geom_vline(xintercept=1/lambda, linetype="solid", color="black") + 
+    annotate("text", size=3, hjust=0, x = 1/lambda+2, y=.1, color="black"
+             , label=paste("mean =",1/lambda)) + 
+    xlab("Values") +
+    ggtitle("Distribution of All Samples") +
+    theme(plot.title=element_text(size=14))
+b <- ggplot(long_means, aes(x=x, y=..density..)) +
     geom_histogram(fill="steelblue", color="grey80", size=.2, alpha=.8) +
     geom_density(color="grey10", size=1) + 
     geom_vline(xintercept=mean(sample_means), linetype="dashed", color="red") + 
-    annotate("text", size=6, hjust=0, x = mean(sample_means)+.5, y=.5, color="red"
-             , label=paste("mean=",round(mean(sample_means),2))) + 
-    xlab("Sample Values") +
-    ggtitle("Sampling Distribution of the Mean")
+    annotate("text", size=3, hjust=0, x = mean(sample_means)+.5, y=.5, color="red"
+             , label=paste("mea n=",round(mean(sample_means),2))) + 
+    xlab("Means of Sample Values") +
+    ggtitle("Sampling Distribution of the Mean") +
+    theme(plot.title=element_text(size=14))
 ```
-
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.width=3, fig.height=3}
+a
+b
+```
 Visually, the distribution of the sample means is much closer to normal than the distribution of the sample itself. If the distribution is normal, we expect the mean of the distribution to be equal to the median and about 95% of the results within 1.96 standard deviations, which we find to be approximately the case:
 ```{r}
 lower <- mean(sample_means) - 1.96*sd(sample_means)
 upper <- mean(sample_means) + 1.96*sd(sample_means)
 set_check <- sum(sample_means > lower & sample_means < upper)/length(sample_means)
 ```
-```{r echo=FALSE}
-paste("Mean: ", round(mean(sample_means),2))
-paste("Median: ", round(median(sample_means),2))
-paste("Percentage of sampling means within 1.96 standard deviations: ", percent(set_check))
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+print(paste("Mean: ", round(mean(sample_means),2)))
+print(paste("Median: ", round(median(sample_means),2)))
+print(paste("Percentage of sampling means within 1.96 standard deviations: ", percent(set_check)))
 ```
 
 To confirm these checks with something more concrete, we can run a quantile-quantile (Q-Q) plot. The Q-Q plot compares each point in the dataset to where they would be in a perfectly normal distribution with the same mean and standard deviation:
-```{r}
+
+```{r fig.width=3, fig.height=3, echo=FALSE}
 qplot(sample = sample_means)
+qplot(sample = c(my_samples))
 ```
 
 In a Q-Q plot, we look for general linearity as indicative of normality, which we roughly have with all four combinations of dosage and supplement. We could check specifically with a Shapiro-Wilk normality test, but with large datasets (like our sample) this test can lead to concluding the data is not normal even though in reality it is quite normal.
 
-Given the linearity of the Q-Q plot and what we see with the standard deviations, we can feel comfortable that the sampling distribution of the means is indeed normally distributed.
+Given the linearity of the Q-Q plot and what we see with the standard deviations, we can feel comfortable that the sampling distribution of the means is indeed normally distributed, consistent with the Central Limit Theorem.
 
 ***
 ##Section 2: Basic Inferential Data Analysis
@@ -112,38 +155,37 @@ Using the ToothGrowth data from the R datasets package, we will first perform so
 ###Exploratory Data Analysis
 The first step is to load the packages we'll need, along with the dataset, and get a sense of the structure of ToothGrowth. R's documentation states that the ToothGrowth dataset is the effect of Vitamin C on tooth growth in guinea pigs. Ten guinea pigs were each given three dose levels of Vitamin C (0.5, 1 and 2 mg) with each of two delivery methods (orange juice and ascorbic acid), and their tooth growth measured after each test. Therefore, we'd expect to see 60 observations in the dataset.
 ```{r edaSetup, message=FALSE, warning=FALSE}
-ensurePkg("dplyr")
 data("ToothGrowth")
 str(ToothGrowth)
 ```
 
 We see that there are 60 observations of three variables:
-* len, which is the length of observed tooth growth
-* supp, a variable with two values: "OJ" and "VC", which is the supplement type
-* dose, which is the dose in milligrams of orange juice or vitamin C given to each subject
 
-To get a sense of the range of values for `len`, we run a quick summary of the variable:
+* len, which is the length of observed tooth growth
+* supp, a variable with two values: "OJ" and "VC", which are the two supplement types
+* dose, which is the dose in milligrams of orange juice or ascorbic acid given to each subject
+
+To get a sense of the wide range of values for `len`, we run a quick summary of the variable:
 ```{r}
 summary(ToothGrowth$len)
 ```
 
 Taking a look at a few of the rows, it appears that there might be some correlation between `dose` and `len`:
 ```{r}
-head(ToothGrowth)
-tail(ToothGrowth)
+ToothGrowth[c(1:3,58:60), ]
 ```
 
 Plotting the values for each combination of supplement and dose, it is at least visually suggestive that there is a correlation between greater doses of Vitamin C and tooth growth:
-```{r}
-coplot(len ~ dose | supp, data = ToothGrowth, panel = panel.smooth,
+```{r, warning=FALSE, message=FALSE}
+coplot(len ~ dose | supp, data = ToothGrowth, panel = panel.smooth, col="steelblue",
        xlab = "ToothGrowth data: length vs dose, given type of supplement")
 ```
-The conditioning plot above shows each tooth growth length observation for each combination of dose, broken out by type of supplement. It illustrates the increase in growth length under higher Vitamin C doses for both supplements, with OJ appearing to do better at lower doses but VC closing the gap at 2.0mg with a similar mean (albeit greater variance).
+The conditioning plot above shows each tooth growth length observation for each combination of dose, broken out by type of supplement. It illustrates the increase in growth length under higher Vitamin C doses for each supplement, both of which show a correlation between increased Vitamin C doses and growth length.
 
-To confirm the correlation we see in the conditioning plot, we'll calculate the correlation between dose and tooth growth. Since there is a difference in results between OJ and VC, we first group by `supp` and `dose` and calculate the means.
+We'll next calculate the correlation between dose and tooth growth. Since there is a difference in results between OJ and VC, we first group by `supp` and `dose` and calculate the means.
 ```{r}
 grouped_results <- ToothGrowth %>% group_by(supp, dose) %>% summarize(len.mean = mean(len))
-print(grouped_results)
+grouped_results
 ```
 
 And then calculate the correlation between dose and mean length for each supplement:
@@ -152,11 +194,11 @@ grouped_cor_OJ <- cor(grouped_results[grouped_results$supp == "OJ", ]$dose, grou
 grouped_cor_VC <- cor(grouped_results[grouped_results$supp == "VC", ]$dose, grouped_results[grouped_results$supp == "VC", ]$len.mean)
 ```
 
-The means of tooth growth are very highly correlated with Vitamin C supplements, regardless of the source of the C (correlation for OJ: `r grouped_cor_OJ`; correlation for VC: `r grouped_cor_VC`. But how can we be sure that this is statistically valid? In the next section, we will answer this question.
+The means of tooth growth are very highly correlated with Vitamin C supplements, regardless of the source of the C (correlation for OJ: `r round(grouped_cor_OJ,3)`; correlation for VC: `r rount(grouped_cor_VC,3)`. We will examine the statistical validity of this correlation in the analysis section.
 
-We also want to see whether or not the data are normally distributed, since this will affect which test statistic to use in our analysis. Given that each combination of `supp` and `dose` is unique, we cannot look at the entire `len` column so we'll break it down.
+We also want to see whether or not the data are normally distributed, since this will affect which test statistic to use in our analysis. Given that each combination of `supp` and `dose` is unique, we cannot look at the entire `len` column so we subset the data.
 
-Let's subset by 0.5mg and 2.0mg dosages for each supplement and then create a quantile-quantile (Q-Q) plot to test for normality. The Q-Q plot compares each point in the dataset to where they would be in a perfectly normal distribution with the same mean and standard deviation. In this case, we'll plot the 2.0mg and 0.5mg doses for each supplement.
+We subset by 0.5mg and 2.0mg dosages for each supplement and then create a quantile-quantile (Q-Q) plot to test for normality. The Q-Q plot compares each point in the dataset to where they would be in a perfectly normal distribution with the same mean and standard deviation. In this case, we'll plot the 2.0mg and 0.5mg doses for each supplement.
 ```{r}
 half_dose_OJ <- ToothGrowth[ToothGrowth$dose == 0.5 & ToothGrowth$supp == "OJ", ]$len
 two_dose_OJ <- ToothGrowth[ToothGrowth$dose == 2 & ToothGrowth$supp == "OJ", ]$len
@@ -164,27 +206,24 @@ half_dose_VC <- ToothGrowth[ToothGrowth$dose == 0.5 & ToothGrowth$supp == "VC", 
 two_dose_VC <- ToothGrowth[ToothGrowth$dose == 2 & ToothGrowth$supp == "VC", ]$len
 qq_df <- data.frame(cbind(half_dose_OJ, two_dose_OJ, half_dose_VC, two_dose_VC))
 qq_df <- gather(qq_df, "dose_supp", "len")
-
 p <- qplot(sample=len, data=qq_df, color=dose_supp, size=4)
 p + scale_color_brewer(palette="Dark2") + guides(size=FALSE)
 ```
 
-In a Q-Q plot, we look for general linearity as indicative of normality, which we roughly have with all four combinations of dosage and supplement. We can check specifically with a Shapiro-Wilk normality test, looking for a P-value greater than our chosen $\alpha\$ of 0.5, which would lead us to accept the null hypothesis that the data are distributed normally.
+In a Q-Q plot, we look for general linearity as indicative of normality, which we roughly have with all four combinations of dosage and supplement. We can check specifically with a Shapiro-Wilk normality test, looking for a P-value greater than our chosen $\alpha\$ of 0.5, which would lead us to accept the null hypothesis that the data are distributed normally. (Showing just VC to conserve space.)
 ```{r}
-shapiro.test(half_dose_OJ)
-shapiro.test(two_dose_OJ)
 shapiro.test(half_dose_VC)
 shapiro.test(two_dose_VC)
 ```
-Given approximate linearity of the Q-Q plots and the P-values > $\alpha\$, we are comfortable stating that the data are approximately normally distributed.
+Given the approximate linearity of the Q-Q plots and that all P-values > $\alpha\$, we are comfortable stating that the data are approximately normally distributed. This is an important assumption.
 
 We next look at the doses that were administered and confirm that they were given equally in the form of both orange juice and ascorbic acid. This gives us confidence that we do not have any missing observations.
-```{r}
+```{r echo=FALSE}
 unique(ToothGrowth$dose)
 with(ToothGrowth, table(supp, dose))
 ```
 
-The final critical thing to notice about the dataset is that there is **no unique identifier for each guinea pig**. This means that although the same animals were used for each dose and supplement, we have no way to match them up and therefore no way to identify which results are paired.
+The final critical thing to notice about the dataset is that there is **no unique identifier for each guinea pig**. This means that although the same animals were used for each dose and supplement, we have no way to match them up and therefore **no way to identify which results are paired**.
 
 ###Summary of the Data
 Before moving on to comparing tooth growth results by dose and source of ascorbic acid, let's summarize what we know:
@@ -198,26 +237,24 @@ Before moving on to comparing tooth growth results by dose and source of ascorbi
 * However, there is no unique identifier for each subject so we cannot pair the results; nothing would indicate, for example, that we can assume the guinea pig with the smallest length of growth under 0.5mg is the same guinea pig that showed the smallest growth when given 2.0mg.
 
 ###Comparison of Tooth Growth Results by 'supp' and 'dose'
-As discussed in the previous section, the means of tooth growth do increase in response to greater dosages of Vitamin C, regardless of the source of the C, but we want to confirm this statistically with a reasonable level of confidence.
+We saw that the means of tooth growth do increase in response to greater dosages of Vitamin C, regardless of the source of the C, but we want to confirm this statistically with a reasonable level of confidence.
 
-Also discussed in the previous section, while the samples are paired, **we cannot identify which guinea pig is which so we cannot accurately pair them**. We therefore will not be able to use the paired t-test. If we had identifiers for which `len` result belonged to which guinea pig, we could have.
+As already mentioned, while the samples are paired, **we cannot identify which guinea pig is which so we cannot accurately pair them**. We therefore will not be able to use the paired t-test. If we had identifiers for which `len` result belonged to which guinea pig, we could have.
 
-We could group both OJ and VC and compare tooth growth for the guinea pigs, but the means are quite different between the two supplements.
-```{r}
+The means for each supplement are quite different so we will treat OJ and VC treatments as separate experiments and analyze them separately.
+```{r echo=FALSE}
 print(grouped_results)
 ```
-To remove this issue, we will treat the OJ and VC treatments as separate experiments on the same subjects and analyze them separately. We will obtain the t statistic, confidence intervals and confidence intervals first formulaically for the OJ supplement and then directly using the R function `t.test()` for the VC.
-
 If Vitamin C does increase tooth growth, we would expect greater dosages to yield greater growth (presumably up to some limit, but testing that limit is beyond the data provided). Therefore, for one or both supplements, mean tooth growth from dosages of 2.0mg should be greater than mean tooth growth from 0.5mg dosages. But if Vitamin C supplements do not result in increased tooth growth, the means should not differ significantly.
 
 Our null hypothesis is therefore:
-$$H_0: \mu_2 = \mu_{0.5}\quad \textrm{or, equivalently,} \quad H_0: \mu_2 - \mu_{0.5} = 0$$
+$$H_0: \mu_{2.0} = \mu_{0.5}\quad \textrm{or, equivalently,} \quad H_0: \mu_{2.0} - \mu_{0.5} = 0$$
 
 If Vitamin C does enhance tooth growth, we would expect to see increased growth under the 2.0mg dose, so our alternative hypothesis is:
-$$H_a: \mu_2 > \mu_{0.5}\quad \textrm{or, equivalently,} \quad H_a: \mu_2 - \mu_{0.5} > 0$$
+$$H_a: \mu_{2.0} > \mu_{0.5}\quad \textrm{or, equivalently,} \quad H_a: \mu_{2.0} - \mu_{0.5} > 0$$
 
 To determine whether or not to reject the null hypothesis above, we'll set the level of significance ($\alpha\$) to 0.05.
-```{r}
+```{r echo=FALSE}
 alpha <- 0.05
 ```
 
@@ -228,8 +265,8 @@ f_test_p <-var.test(half_dose_OJ, two_dose_OJ)
 The resulting P-Value of `r round(f_test_p$p.value,2)` means that we can move forward with the two-sample t-test with equal variances.
 
 The formulas we're using to calculate the test statistic are:
-$$t=\frac{\bar X_2 - \bar X_{0.5}}{s_p \sqrt{\frac{1}{n_2} + \frac{1}{n_{0.5}}} }$$
-$$s_p=\sqrt\frac{(n_2 - 1)s_2^2 + (n_{0.5} - 1)s_{0.5}^2}{n_2 + n_{0.5} - 2}$$
+$$t=\frac{\bar X_2 - \bar X_{0.5}}{s_p \sqrt{\frac{1}{n_{2.0}} + \frac{1}{n_{0.5}}} }$$
+$$s_p=\sqrt\frac{(n_{2.0} - 1)s_2^2 + (n_{0.5} - 1)s_{0.5}^2}{n_{2.0} + n_{0.5} - 2}$$
 
 Since we are not using the paired test, the sample size is 20. Plugging in the needed values into the above formula yields:
 ```{r}
